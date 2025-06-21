@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Tic Tac Toe - Home</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            animation: gradientBG 15s ease infinite;
+            background-size: 400% 400%;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        button {
+            padding: 0.8rem 2rem;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .game-code {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4CAF50;
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            display: none;
+        }
+
+        .error-message {
+            color: #ff4444;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .success-message {
+            color: #00C851;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tic Tac Toe</h1>
+        
+        <!-- Create Game Section -->
+        <div id="createGameSection">
+            <div class="form-group">
+                <input type="text" id="createPlayerName" placeholder="Enter your name" required>
+            </div>
+            <button onclick="createGame()">Create New Game</button>
+        </div>
+
+        <!-- Join Game Section -->
+        <div id="joinGameSection" style="margin-top: 2rem;">
+            <div class="form-group">
+                <input type="text" id="joinPlayerName" placeholder="Enter your name" required>
+                <input type="text" id="gameCode" placeholder="Enter game code" required>
+            </div>
+            <button onclick="joinGame()">Join Game</button>
+        </div>
+
+        <!-- Game Code Display -->
+        <div id="gameCodeDisplay" class="game-code"></div>
+        
+        <!-- Messages -->
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+    </div>
+
+    <script>
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function createGame() {
+            const playerName = document.getElementById('createPlayerName').value.trim();
+            if (!playerName) {
+                showError('Please enter your name');
+                return;
+            }
+
+            fetch('/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `playerName=${encodeURIComponent(playerName)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                localStorage.setItem('playerId', data.playerId);
+                const gameCodeDisplay = document.getElementById('gameCodeDisplay');
+                gameCodeDisplay.textContent = `Game Code: ${data.gameId}`;
+                gameCodeDisplay.style.display = 'block';
+                showSuccess('Game created! Share the code with player 2');
+                
+                // Redirect to game page after showing the code
+                setTimeout(() => {
+                    window.location.href = `/game/${data.gameId}`;
+                }, 2000);
+            })
+            .catch(error => {
+                showError('Failed to create game. Please try again.');
+                console.error('Error:', error);
+            });
+        }
+
+        function joinGame() {
+            const playerName = document.getElementById('joinPlayerName').value.trim();
+            const gameId = document.getElementById('gameCode').value.trim().toUpperCase();
+
+            if (!playerName || !gameId) {
+                showError('Please enter both your name and the game code');
+                return;
+            }
+
+            fetch(`/join/${gameId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `playerName=${encodeURIComponent(playerName)}`
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                localStorage.setItem('playerId', data.playerId);
+                showSuccess('Joining game...');
+                window.location.href = `/game/${gameId}`;
+            })
+            .catch(error => {
+                showError(error.message);
+                console.error('Error:', error);
+            });
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Tic Tac Toe</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cell-size: 120px;
+            --mark-size: calc(var(--cell-size) * 0.8);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+            animation: gradientBG 15s ease infinite;
+            background-size: 400% 400%;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #fff, #f3f3f3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status {
+            font-size: 1.5rem;
+            margin: 1.5rem 0;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, auto);
+            gap: 10px;
+            margin: 2rem auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            opacity: 0.5;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .board.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .players-container {
+            display: flex;
+            justify-content: space-around;
+            margin: 2rem 0;
+            gap: 2rem;
+        }
+
+        .player {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem 2rem;
+            border-radius: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            flex: 1;
+            max-width: 200px;
+            opacity: 0.7;
+        }
+
+        .player.active {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        .player-symbol {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .player.active .player-symbol {
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .player:first-child .player-symbol {
+            color: #FF4B4B;
+        }
+
+        .player:last-child .player-symbol {
+            color: #47C2FF;
+        }
+
+        .player-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .waiting-message {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+
+        .game-code-display {
+            font-size: 1.2rem;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: calc(var(--mark-size) * 0.7);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .cell.x {
+            color: #FF4B4B;
+            text-shadow: 0 0 10px rgba(255, 75, 75, 0.5);
+        }
+
+        .cell.o {
+            color: #47C2FF;
+            text-shadow: 0 0 10px rgba(71, 194, 255, 0.5);
+        }
+
+        .cell.x {
+            animation: popIn 0.3s ease-out;
+        }
+
+        .cell.o {
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .winning-line {
+            position: absolute;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            z-index: 1;
+            height: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .winning-line.diagonal {
+            height: 8px;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
+        }
+
+        .winning-line.animate {
+            animation: glowPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
+            50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); }
+            100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
+        }
+
+        @keyframes drawDiagonal {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+
+        .cell.win {
+            animation: winPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes winPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .play-button {
+            background: linear-gradient(45deg, #2196F3, #00BCD4);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 2rem auto;
+            display: none;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .play-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.4);
+            background: linear-gradient(45deg, #1E88E5, #00ACC1);
+        }
+
+        .play-button.visible {
+            display: block;
+        }
+
+        .play-button:disabled {
+            background: linear-gradient(45deg, #9E9E9E, #BDBDBD);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.7;
+        }
+
+        .ready-status {
+            font-size: 1rem;
+            color: #4CAF50;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .ready-status.visible {
+            display: block;
+        }
+
+        .game-controls {
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .action-button {
+            background: linear-gradient(45deg, #FF4B4B, #FF6B6B);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 1rem;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(45deg, #FF6B6B, #FF8B8B);
+        }
+
+        .action-button:active {
+            transform: translateY(1px);
+        }
+
+        #playAgainButton {
+            background: linear-gradient(45deg, #47C2FF, #4FACFE);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tic Tac Toe</h1>
+        
+        <!-- Waiting message -->
+        <div id="waitingMessage" class="waiting-message">
+            Waiting for Player 2 to join...
+            <div class="game-code-display">
+                Game Code: <span th:text="${gameId}"></span>
+            </div>
+        </div>
+
+        <!-- Player info -->
+        <div class="players-container">
+            <div class="player" id="player1">
+                <div class="player-symbol">X</div>
+                <div class="player-name" th:text="${gameRoom.player1 != null ? gameRoom.player1.name : 'Waiting...'}">Waiting...</div>
+            </div>
+            <div class="player" id="player2">
+                <div class="player-symbol">O</div>
+                <div class="player-name" th:text="${gameRoom.player2 != null ? gameRoom.player2.name : 'Waiting...'}">Waiting...</div>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button id="playButton" class="play-button">Ready to Play!</button>
+            <div id="readyStatus" class="ready-status">✓ Ready</div>
+            <div class="status" id="status">Waiting for players...</div>
+        </div>
+
+        <div class="board" id="board">
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+            <div class="cell" data-cell></div>
+        </div>
+
+        <!-- Add Play Again button after the board -->
+        <button id="playAgainButton" style="display: none;" class="action-button">
+            Play Again
+        </button>
+    </div>
+
+    <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+    <script th:inline="javascript">
+        const gameId = /*[[${gameId}]]*/ 'XXXXXX';
+        const playerId = localStorage.getItem('playerId');
+        let stompClient = null;
+        let gameActive = false;
+        let isMyTurn = false;
+        let isReady = false;
+        let lastGameState = null;
+
+        function connect() {
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            stompClient.debug = null;
+
+            stompClient.connect({}, function(frame) {
+                console.log('Connected to WebSocket');
+                
+                stompClient.subscribe('/topic/game/' + gameId, function(response) {
+                    const gameRoom = JSON.parse(response.body);
+                    handleGameUpdate(gameRoom);
+                });
+
+                // Request initial game state
+                fetch(`/game/${gameId}/state`)
+                    .then(response => response.json())
+                    .then(gameRoom => {
+                        console.log('Initial game state:', gameRoom);
+                        handleGameUpdate(gameRoom);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching game state:', error);
+                    });
+            }, function(error) {
+                console.error('WebSocket connection error:', error);
+            });
+        }
+
+        function handleGameUpdate(gameRoom) {
+            console.log('Game state update received:', gameRoom);
+            
+            if (gameRoom.gameStarted) {
+                gameActive = true;
+                const player1HasX = gameRoom.player1.symbol === 'X';
+                const isPlayer1 = playerId === gameRoom.player1.id;
+                
+                // Update isMyTurn based on current game state
+                if (gameRoom.gameState.xIsNext) {
+                    // If it's X's turn, the player with X should play
+                    isMyTurn = (isPlayer1 && player1HasX) || (!isPlayer1 && !player1HasX);
+                } else {
+                    // If it's O's turn, the player with O should play
+                    isMyTurn = (isPlayer1 && !player1HasX) || (!isPlayer1 && player1HasX);
+                }
+                
+                console.log('Turn state:', 
+                          'X turn:', gameRoom.gameState.xIsNext,
+                          'Player1 has X:', player1HasX,
+                          'Is Player1:', isPlayer1,
+                          'Is my turn:', isMyTurn);
+            }
+            
+            updatePlayButtonVisibility(gameRoom);
+            updateGameStatus(gameRoom);
+            updatePlayerInfo(gameRoom);
+            updateBoardState(gameRoom);
+        }
+
+        function updatePlayButtonVisibility(gameRoom) {
+            const playButton = document.getElementById('playButton');
+            const board = document.getElementById('board');
+            
+            console.log('Updating play button visibility');
+            console.log('Player1:', gameRoom.player1);
+            console.log('Player2:', gameRoom.player2);
+            console.log('Game started:', gameRoom.gameStarted);
+            
+            if (gameRoom.player1 && gameRoom.player2 && !gameRoom.gameStarted) {
+                playButton.style.display = 'block';
+                playButton.classList.add('visible');
+                board.classList.remove('active');
+                console.log('Play button should be visible');
+            } else {
+                playButton.style.display = 'none';
+                playButton.classList.remove('visible');
+                if (gameRoom.gameStarted) {
+                    board.classList.add('active');
+                }
+                console.log('Play button should be hidden');
+            }
+        }
+
+        function updateGameStatus(gameRoom) {
+            const status = document.getElementById('status');
+            const waitingMessage = document.getElementById('waitingMessage');
+            const board = document.getElementById('board');
+            const playAgainButton = document.getElementById('playAgainButton');
+            
+            if (!gameRoom.player2) {
+                waitingMessage.style.display = 'block';
+                board.classList.remove('active');
+                status.textContent = 'Waiting for Player 2 to join...';
+                playAgainButton.style.display = 'none';
+            } else if (!gameRoom.gameStarted) {
+                waitingMessage.style.display = 'none';
+                board.classList.remove('active');
+                status.textContent = 'Click Play to start the game!';
+                playAgainButton.style.display = 'none';
+            } else {
+                waitingMessage.style.display = 'none';
+                board.classList.add('active');
+                
+                if (gameRoom.gameState.winner) {
+                    if (gameRoom.gameState.winner === 'draw') {
+                        status.textContent = "It's a draw!";
+                    } else {
+                        const winnerName = gameRoom.gameState.winner === 'X' ? 
+                            (gameRoom.player1.symbol === 'X' ? gameRoom.player1.name : gameRoom.player2.name) :
+                            (gameRoom.player1.symbol === 'O' ? gameRoom.player1.name : gameRoom.player2.name);
+                        status.textContent = `Winner: ${winnerName}!`;
+                    }
+                    playAgainButton.style.display = 'block';
+                } else {
+                    const player1HasX = gameRoom.player1.symbol === 'X';
+                    const currentPlayerName = gameRoom.gameState.xIsNext ? 
+                        (player1HasX ? gameRoom.player1.name : gameRoom.player2.name) :
+                        (player1HasX ? gameRoom.player2.name : gameRoom.player1.name);
+                    
+                    status.textContent = `${currentPlayerName}'s turn${isMyTurn ? ' (Your turn!)' : ''}`;
+                    playAgainButton.style.display = 'none';
+                }
+            }
+        }
+
+        function updatePlayerInfo(gameRoom) {
+            const player1Element = document.getElementById('player1');
+            const player2Element = document.getElementById('player2');
+            
+            // Update player names
+            const player1NameElement = player1Element.querySelector('.player-name');
+            const player2NameElement = player2Element.querySelector('.player-name');
+            
+            player1NameElement.textContent = gameRoom.player1 ? gameRoom.player1.name : 'Waiting...';
+            player2NameElement.textContent = gameRoom.player2 ? gameRoom.player2.name : 'Waiting...';
+            
+            // Add "YOU" indicator to show which player you are
+            if (gameRoom.player1 && playerId === gameRoom.player1.id) {
+                player1NameElement.textContent += ' (YOU)';
+                player1Element.style.border = '2px solid #FFD700';
+            } else {
+                player1Element.style.border = '';
+            }
+            
+            if (gameRoom.player2 && playerId === gameRoom.player2.id) {
+                player2NameElement.textContent += ' (YOU)';
+                player2Element.style.border = '2px solid #FFD700';
+            } else {
+                player2Element.style.border = '';
+            }
+            
+            // Update player symbols dynamically
+            const player1SymbolElement = player1Element.querySelector('.player-symbol');
+            const player2SymbolElement = player2Element.querySelector('.player-symbol');
+            
+            if (gameRoom.player1 && gameRoom.player1.symbol) {
+                player1SymbolElement.textContent = gameRoom.player1.symbol;
+            }
+            if (gameRoom.player2 && gameRoom.player2.symbol) {
+                player2SymbolElement.textContent = gameRoom.player2.symbol;
+            }
+            
+            // Update active player
+            if (gameRoom.gameStarted && !gameRoom.gameState.winner) {
+                // Determine who should be active based on current turn and symbols
+                const player1HasX = gameRoom.player1 && gameRoom.player1.symbol === 'X';
+                const player2HasX = gameRoom.player2 && gameRoom.player2.symbol === 'X';
+                
+                if (gameRoom.gameState.xIsNext) {
+                    // X's turn
+                    if (player1HasX) {
+                        player1Element.classList.add('active');
+                        player2Element.classList.remove('active');
+                    } else if (player2HasX) {
+                        player2Element.classList.add('active');
+                        player1Element.classList.remove('active');
+                    }
+                } else {
+                    // O's turn
+                    if (!player1HasX) {
+                        player1Element.classList.add('active');
+                        player2Element.classList.remove('active');
+                    } else if (!player2HasX) {
+                        player2Element.classList.add('active');
+                        player1Element.classList.remove('active');
+                    }
+                }
+            } else {
+                player1Element.classList.remove('active');
+                player2Element.classList.remove('active');
+            }
+        }
+
+        function updateBoardState(gameRoom) {
+            const cells = document.querySelectorAll('.cell');
+            const board = gameRoom.gameState.board;
+            
+            console.log('Updating board state:', board);
+            
+            cells.forEach((cell, index) => {
+                // Remove existing classes
+                cell.classList.remove('x', 'o');
+                
+                // Add new class if cell has a value
+                const value = board[index];
+                if (value) {
+                    cell.classList.add(value.toLowerCase());
+                    cell.textContent = value;
+                } else {
+                    cell.textContent = '';
+                }
+            });
+
+            // Update game state variables (this is handled in handleGameUpdate now)
+            // No need to duplicate the logic here
+        }
+
+        function handleCellClick(event) {
+            const cell = event.target;
+            const position = Array.from(cell.parentElement.children).indexOf(cell);
+            
+            console.log('=== CELL CLICK DEBUG ===');
+            console.log('Cell clicked:', position);
+            console.log('Game active:', gameActive);
+            console.log('Is my turn:', isMyTurn);
+            console.log('Cell content:', cell.textContent);
+            console.log('========================');
+            
+            // Only check if game is active and cell is empty
+            if (!gameActive) {
+                console.log('Game not active');
+                return;
+            }
+            
+            if (cell.textContent) {
+                console.log('Cell already taken');
+                showMessage("This cell is already taken!");
+                return;
+            }
+            
+            // Make the move - let server validate turn
+            makeMove(position);
+        }
+
+        // Add play button click handler
+        document.getElementById('playButton').addEventListener('click', function() {
+            console.log('Play button clicked');
+            const status = document.getElementById('status');
+            const board = document.getElementById('board');
+            
+            fetch(`/start/${gameId}?playerId=${playerId}`, {
+                method: 'POST'
+            })
+            .then(response => {
+                console.log('Start game response:', response);
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text || 'Failed to start game');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Game started successfully:', data);
+                if (data.gameStarted) {
+                    this.style.display = 'none';
+                    board.classList.add('active');
+                    gameActive = true;
+                    // The game state will be updated via WebSocket, so don't set isMyTurn here
+                    status.textContent = `Game started! ${data.currentPlayer}'s turn`;
+                } else {
+                    throw new Error('Game did not start properly');
+                }
+            })
+            .catch(error => {
+                console.error('Error starting game:', error);
+                status.textContent = error.message || 'Failed to start game';
+            });
+        });
+
+        // Add click handlers to all cells
+        document.querySelectorAll('.cell').forEach(cell => {
+            cell.addEventListener('click', handleCellClick);
+        });
+
+        // Connect to WebSocket when page loads
+        connect();
+
+        function showMessage(message) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.style.color = '#ff4444';
+            setTimeout(() => {
+                status.style.color = '';
+                updateGameStatus(lastGameState);  // Restore normal status
+            }, 2000);
+        }
+
+        function makeMove(position) {
+            console.log('Making move request at position:', position);
+            
+            fetch('/app/move', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    gameId: gameId,
+                    playerId: playerId,
+                    position: position
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text || 'Move failed');
+                    });
+                }
+                return response.text();
+            })
+            .then(result => {
+                console.log('Move result:', result);
+            })
+            .catch(error => {
+                console.error('Error making move:', error);
+                showMessage(error.message);
+            });
+        }
+
+        // Add Play Again functionality
+        document.getElementById('playAgainButton').addEventListener('click', function() {
+            console.log('Play Again clicked');
+            fetch('/app/reset', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    gameId: gameId,
+                    playerId: playerId
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(text || 'Failed to reset game');
+                    });
+                }
+                return response.text();
+            })
+            .then(result => {
+                console.log('Game reset:', result);
+            })
+            .catch(error => {
+                console.error('Error resetting game:', error);
+                showMessage(error.message);
+            });
+        });
+    </script>
+</body>
+</html>

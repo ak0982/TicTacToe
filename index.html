@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        :root {
+            --cell-size: 100px;
+            --mark-size: calc(var(--cell-size) * 0.8);
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .status {
+            font-size: 24px;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .score {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, auto);
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+            font-size: calc(var(--mark-size) * 0.7);
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+
+        .cell:first-child,
+        .cell:nth-child(2),
+        .cell:nth-child(3) {
+            border-top: none;
+        }
+
+        .cell:nth-child(3n + 1) {
+            border-left: none;
+        }
+
+        .cell:nth-child(3n + 3) {
+            border-right: none;
+        }
+
+        .cell:last-child,
+        .cell:nth-child(8),
+        .cell:nth-child(7) {
+            border-bottom: none;
+        }
+
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .cell.x {
+            color: #FF4B4B;
+        }
+
+        .cell.o {
+            color: #47C2FF;
+        }
+
+        .winning-line {
+            position: absolute;
+            background: #FFD700;
+            z-index: 1;
+            transform-origin: left;
+            animation: drawLine 0.5s ease-in-out forwards;
+        }
+
+        @keyframes drawLine {
+            0% {
+                transform: scaleX(0);
+            }
+            100% {
+                transform: scaleX(1);
+            }
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        .player-input {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .player-input input {
+            padding: 8px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+        }
+
+        .player-input button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="playerInput" class="player-input">
+            <h2>Enter Player Names</h2>
+            <div>
+                <input type="text" id="player1" placeholder="Player 1 (X)" required>
+                <input type="text" id="player2" placeholder="Player 2 (O)" required>
+            </div>
+            <button onclick="startGame()">Start Game</button>
+        </div>
+
+        <div id="gameContainer" style="display: none;">
+            <div class="status" id="status">Player 1's turn (X)</div>
+            <div class="score" id="score">Score - Player 1: 0 | Player 2: 0</div>
+            
+            <div class="board" id="board">
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+                <div class="cell" data-cell></div>
+            </div>
+
+            <div class="controls">
+                <button onclick="resetGame()">New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const X_CLASS = 'x';
+        const O_CLASS = 'o';
+        const cells = document.querySelectorAll('[data-cell]');
+        const board = document.getElementById('board');
+        const statusDisplay = document.getElementById('status');
+        const scoreDisplay = document.getElementById('score');
+        const playerInputDiv = document.getElementById('playerInput');
+        const gameContainer = document.getElementById('gameContainer');
+        
+        let currentPlayer = X_CLASS;
+        let gameActive = true;
+        let gameState = ['', '', '', '', '', '', '', '', ''];
+        let scores = { X: 0, O: 0 };
+        let players = { X: 'Player 1', O: 'Player 2' };
+
+        const winningCombinations = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+            [0, 4, 8], [2, 4, 6] // Diagonals
+        ];
+
+        function startGame() {
+            const player1Name = document.getElementById('player1').value.trim() || 'Player 1';
+            const player2Name = document.getElementById('player2').value.trim() || 'Player 2';
+            
+            players = { X: player1Name, O: player2Name };
+            playerInputDiv.style.display = 'none';
+            gameContainer.style.display = 'block';
+            
+            updateStatus();
+            updateScore();
+        }
+
+        function handleClick(e, index) {
+            const cell = e.target;
+            
+            if (gameState[index] !== '' || !gameActive) return;
+            
+            gameState[index] = currentPlayer;
+            cell.textContent = currentPlayer === X_CLASS ? 'X' : 'O';
+            cell.classList.add(currentPlayer);
+            
+            if (checkWin()) {
+                gameActive = false;
+                scores[currentPlayer]++;
+                updateScore();
+                drawWinningLine();
+                setTimeout(() => {
+                    alert(`${players[currentPlayer]} wins!`);
+                }, 500);
+            } else if (isDraw()) {
+                gameActive = false;
+                setTimeout(() => {
+                    alert("Draw!");
+                }, 100);
+            } else {
+                currentPlayer = currentPlayer === X_CLASS ? O_CLASS : X_CLASS;
+                updateStatus();
+            }
+        }
+
+        function drawWinningLine() {
+            const winningCombo = winningCombinations.find(combination => {
+                return combination.every(index => {
+                    return gameState[index] === currentPlayer;
+                });
+            });
+
+            if (!winningCombo) return;
+
+            const line = document.createElement('div');
+            line.classList.add('winning-line');
+
+            const start = cells[winningCombo[0]].getBoundingClientRect();
+            const end = cells[winningCombo[2]].getBoundingClientRect();
+            const boardRect = board.getBoundingClientRect();
+
+            const length = Math.sqrt(
+                Math.pow(end.left - start.left, 2) + Math.pow(end.top - start.top, 2)
+            );
+
+            const angle = Math.atan2(
+                end.top - start.top,
+                end.left - start.left
+            ) * 180 / Math.PI;
+
+            line.style.width = `${length}px`;
+            line.style.height = '4px';
+            line.style.position = 'absolute';
+            line.style.left = `${start.left - boardRect.left + start.width / 2}px`;
+            line.style.top = `${start.top - boardRect.top + start.height / 2}px`;
+            line.style.transform = `rotate(${angle}deg)`;
+            line.style.transformOrigin = 'left';
+
+            board.appendChild(line);
+        }
+
+        function checkWin() {
+            return winningCombinations.some(combination => {
+                return combination.every(index => {
+                    return gameState[index] === currentPlayer;
+                });
+            });
+        }
+
+        function isDraw() {
+            return gameState.every(cell => cell !== '');
+        }
+
+        function resetGame() {
+            gameState = ['', '', '', '', '', '', '', '', ''];
+            gameActive = true;
+            currentPlayer = X_CLASS;
+            
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove(X_CLASS);
+                cell.classList.remove(O_CLASS);
+            });
+            
+            const line = board.querySelector('.winning-line');
+            if (line) line.remove();
+            
+            updateStatus();
+        }
+
+        function updateStatus() {
+            statusDisplay.textContent = `${players[currentPlayer]}'s turn (${currentPlayer === X_CLASS ? 'X' : 'O'})`;
+        }
+
+        function updateScore() {
+            scoreDisplay.textContent = `Score - ${players.X}: ${scores.X} | ${players.O}: ${scores.O}`;
+        }
+
+        cells.forEach((cell, index) => {
+            cell.addEventListener('click', (e) => handleClick(e, index));
+        });
+    </script>
+</body>
+</html> 
