@@ -73,14 +73,6 @@
             border-radius: 15px;
             position: relative;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            opacity: 0.5;
-            pointer-events: none;
-            transition: all 0.3s ease;
-        }
-
-        .board.active {
-            opacity: 1;
-            pointer-events: auto;
         }
 
         .players-container {
@@ -202,20 +194,23 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
+        /* Winning line styles */
         .winning-line {
             position: absolute;
-            background: linear-gradient(45deg, #FFD700, #FFA500);
-            z-index: 1;
-            height: 10px;
-            border-radius: 5px;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            background: linear-gradient(45deg, #FF4B4B, #FFA500);
+            z-index: 999;
+            height: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(255, 75, 75, 0.7);
             pointer-events: none;
+            transform-origin: left center;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .winning-line.diagonal {
-            height: 8px;
-            background: linear-gradient(45deg, #FFD700, #FFA500);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
+            height: 12px;
+            background: linear-gradient(45deg, #FF4B4B, #FFA500);
+            box-shadow: 0 0 25px rgba(255, 75, 75, 0.8);
         }
 
         .winning-line.animate {
@@ -223,24 +218,20 @@
         }
 
         @keyframes glowPulse {
-            0% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
-            50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.8); }
-            100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.5); }
-        }
-
-        @keyframes drawDiagonal {
-            from { transform: scale(0); }
-            to { transform: scale(1); }
+            0% { box-shadow: 0 0 20px rgba(255, 75, 75, 0.7); }
+            50% { box-shadow: 0 0 35px rgba(255, 75, 75, 1); }
+            100% { box-shadow: 0 0 20px rgba(255, 75, 75, 0.7); }
         }
 
         .cell.win {
             animation: winPulse 1.5s ease-in-out infinite;
+            z-index: 1000;
         }
 
         @keyframes winPulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
+            0% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 75, 75, 0.5); }
+            50% { transform: scale(1.1); box-shadow: 0 0 35px rgba(255, 75, 75, 0.8); }
+            100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 75, 75, 0.5); }
         }
 
         .play-button {
@@ -587,9 +578,13 @@
             
             console.log('Updating board state:', board);
             
+            // Remove any existing winning lines
+            const existingLines = document.querySelectorAll('.winning-line');
+            existingLines.forEach(line => line.remove());
+            
             cells.forEach((cell, index) => {
                 // Remove existing classes
-                cell.classList.remove('x', 'o');
+                cell.classList.remove('x', 'o', 'win');
                 
                 // Add new class if cell has a value
                 const value = board[index];
@@ -601,8 +596,83 @@
                 }
             });
 
-            // Update game state variables (this is handled in handleGameUpdate now)
-            // No need to duplicate the logic here
+            // Check for winner and draw winning line
+            if (gameRoom.gameState.winner && gameRoom.gameState.winner !== 'draw') {
+                const winningCombination = findWinningCombination(board);
+                if (winningCombination) {
+                    drawWinningLine(winningCombination);
+                }
+            }
+        }
+
+        function findWinningCombination(board) {
+            const winningCombinations = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                [0, 4, 8], [2, 4, 6]             // Diagonals
+            ];
+
+            for (const combination of winningCombinations) {
+                const [a, b, c] = combination;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    return combination;
+                }
+            }
+            return null;
+        }
+
+        function drawWinningLine(winningCells) {
+            // Remove any existing winning lines
+            const existingLines = document.querySelectorAll('.winning-line');
+            existingLines.forEach(line => line.remove());
+
+            // Remove existing win classes
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.classList.remove('win');
+            });
+
+            const board = document.querySelector('.board');
+            const cells = Array.from(document.querySelectorAll('.cell'));
+            
+            // Mark winning cells
+            winningCells.forEach(index => {
+                cells[index].classList.add('win');
+            });
+
+            const line = document.createElement('div');
+            line.classList.add('winning-line');
+
+            const startCell = cells[winningCells[0]];
+            const endCell = cells[winningCells[2]];
+            const startRect = startCell.getBoundingClientRect();
+            const endRect = endCell.getBoundingClientRect();
+            const boardRect = board.getBoundingClientRect();
+
+            // Calculate line position and angle
+            const deltaX = endRect.left - startRect.left;
+            const deltaY = endRect.top - startRect.top;
+            const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const angle = Math.atan2(deltaY, deltaX) * (180 / Math.PI);
+
+            // Position the line
+            line.style.width = `${length}px`;
+            line.style.left = `${startRect.left - boardRect.left + startRect.width / 2}px`;
+            line.style.top = `${startRect.top - boardRect.top + startRect.height / 2}px`;
+            line.style.transform = `rotate(${angle}deg) scaleX(0)`;
+
+            // Add diagonal class for diagonal lines
+            if ((winningCells[0] === 0 && winningCells[2] === 8) || 
+                (winningCells[0] === 2 && winningCells[2] === 6)) {
+                line.classList.add('diagonal');
+            }
+
+            board.appendChild(line);
+
+            // Animate the line
+            requestAnimationFrame(() => {
+                line.style.transform = `rotate(${angle}deg) scaleX(1)`;
+                line.classList.add('animate');
+            });
         }
 
         function handleCellClick(event) {
